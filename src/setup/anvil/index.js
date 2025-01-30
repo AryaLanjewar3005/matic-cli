@@ -92,7 +92,7 @@ export class Anvil {
                 '1',
                 '--accounts',
                 '10',
-                //'--mnemonic', `${this.mnemonic}`,
+                '--mnemonic', `${this.mnemonic}`,
                 '--code-size-limit',
                 '10000000000',
                 '--verbosity',

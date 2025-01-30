@@ -6,6 +6,8 @@ set -x
 # export PRIVATE_KEY={{ obj.config.primaryAccount.privateKey }}
 export PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 export MNEMONIC={{ obj.config.primaryAccount.privateKey }}
+export DEPLOYER_PRIVATE_KEY={{ obj.deployerPrivateKey }}
+
 
 # export heimdall id
 export HEIMDALL_ID={{ obj.config.heimdallChainId }}
@@ -20,7 +22,7 @@ cd {{ obj.contracts.repositoryDir }}
 
 export ETHERSCANAPIKEY={{ obj.config.etherscanAPIKey }}
 echo "$ETHERSCANAPIKEY"
-echo "DEPLOYER_PRIVATE_KEY=$PRIVATE_KEY" >> .env
+echo "DEPLOYER_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY" >> .env
 echo "ETHERSCAN_API_KEY=$ETHERSCANAPIKEY" >> .env 
 echo "HEIMDALL_ID='$HEIMDALL_ID'" >> .env
 
@@ -30,11 +32,11 @@ export PATH="$HOME/.foundry/bin:$PATH"
 # forge script scripts/deployment-scripts/deployContracts.s.sol:DeploymentScript --rpc-url http://localhost:9545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
 #
 
-forge script scripts/deployment-scripts/deployContracts.s.sol:DeploymentScript --rpc-url http://localhost:9545 --private-key $PRIVATE_KEY --broadcast
+forge script scripts/deployment-scripts/deployContracts.s.sol:DeploymentScript --rpc-url http://localhost:9545 --private-key $DEPLOYER_PRIVATE_KEY --broadcast
 
-forge script scripts/deployment-scripts/drainStakeManager.s.sol:DrainStakeManagerDeployment --rpc-url http://localhost:9545 --private-key $PRIVATE_KEY --broadcast
+forge script scripts/deployment-scripts/drainStakeManager.s.sol:DrainStakeManagerDeployment --rpc-url http://localhost:9545 --private-key $DEPLOYER_PRIVATE_KEY --broadcast
 
-forge script scripts/deployment-scripts/initializeState.s.sol:InitializeStateScript --rpc-url http://localhost:9545 --private-key $PRIVATE_KEY --broadcast
+forge script scripts/deployment-scripts/initializeState.s.sol:InitializeStateScript --rpc-url http://localhost:9545 --private-key $DEPLOYER_PRIVATE_KEY --broadcast
 
 # forge script scripts/deployment-scripts/childContractDeployment.s.sol:ChildContractDeploymentScript --rpc-url http://localhost:9545 --private-key $PRIVATE_KEY --broadcast
 
