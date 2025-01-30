@@ -15,7 +15,7 @@ export class Anvil {
   constructor(config, options = {}) {
     this.config = config
     this.mnemonic = config.mnemonic
-    console.log("This is from config.anvilAccounts : ", config.anvilAccounts[0].privateKey)
+    console.log("This is from config.anvilAccounts : ", config.anvilAccounts)
     this.deployerAccount = createAccountsFromMnemonics(this.mnemonic, 1)
     console.log(`Deployer's account : ${this.deployerAccount[0].privateKey}`)
     this.deployerPrivateKey = this.deployerAccount[0].privateKey 

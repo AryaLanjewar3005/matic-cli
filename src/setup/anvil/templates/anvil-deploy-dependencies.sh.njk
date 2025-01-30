@@ -5,6 +5,7 @@ set -x
 # private key to deploy contracts
 export PRIVATE_KEY={{ obj.config.primaryAccount.privateKey }}
 export MNEMONIC={{ obj.config.primaryAccount.privateKey }}
+export ANVIL_ACC={{ obj.config.anvilAccounts[0].privateKey }}
 export DEPLOYER_PRIVATE_KEY={{ obj.deployerPrivateKey }}
 
 # export heimdall id
