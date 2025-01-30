@@ -25,6 +25,7 @@ export default class Config {
     options.defaultStake = options.defaultStake || 10000
     options.defaultFee = options.defaultFee || 2000
     options.accounts = []
+    options.anvilAccounts = []
 
     // assign all prop to obj
     this.set(options)

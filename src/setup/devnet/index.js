@@ -19,6 +19,7 @@ import {
   getAccountFromPrivateKey,
   getKeystoreFile,
   getNewPrivateKey,
+  createAccountsFromMnemonics,
   processTemplateFiles
 } from '../../lib/utils.js'
 import { loadConfig } from '../config.js'
@@ -1391,6 +1392,7 @@ export class Devnet {
         }
         // set genesis addresses
         this.config.genesisAddresses = genesisAddresses
+        this.config.anvilAccounts = createAccountsFromMnemonics(this.config.mnemonic, 10)
 
         // setup accounts from signer dump data (based on number of validators)
         //this.config.accounts = this.signerDumpData
