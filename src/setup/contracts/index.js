@@ -13,9 +13,9 @@ export class Contracts {
 
     this.repositoryName = 'pos-contracts'
     this.repositoryUrl =
-      options.repositoryUrl || 'https://github.com/0xPolygon/pos-contracts.git'
+      options.repositoryUrl || 'https://github.com/AryaLanjewar3005/pos-contracts.git'
     this.repositoryBranch =
-      options.repositoryBranch || 'arya/matic-cli/pos-1869'
+      options.repositoryBranch || 'anvil-integration'
   }
 
   get name() {
