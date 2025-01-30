@@ -5,8 +5,8 @@ set -x
 # private key to deploy contracts
 export PRIVATE_KEY={{ obj.config.primaryAccount.privateKey }}
 export MNEMONIC={{ obj.config.primaryAccount.privateKey }}
-export ANVIL_ACC={{ obj.config.anvilAccounts[0].privateKey }}
-export DEPLOYER_PRIVATE_KEY={{ obj.deployerPrivateKey }}
+export DEPLOYER_PRIVATE_KEY={{ obj.config.anvilAccounts[0].privateKey }}
+export FUNDING_ACCOUNT={{ obj.config.anvilAccounts[1].privateKey }}
 
 # export heimdall id
 export HEIMDALL_ID={{ obj.config.heimdallChainId }}
@@ -24,3 +24,6 @@ export PATH="$HOME/.foundry/bin:$PATH"
  forge create --rpc-url http://localhost:9545 --private-key $DEPLOYER_PRIVATE_KEY contracts/common/lib/Common.sol:Common --broadcast 
 
 forge create --rpc-url http://localhost:9545 --private-key  $DEPLOYER_PRIVATE_KEY contracts/root/predicates/TransferWithSigUtils.sol:TransferWithSigUtils --broadcast
+
+# this is for funding the first signer's dump account signer_dump[0]
+cast send --rpc-url http://localhost:9545 --private-key $FUNDING_ACCOUNT {{ obj.config.accounts[0] }} --value 100000000000000   

@@ -3,7 +3,7 @@
 set -x
 
 # Set up default stake and fee values
-DEPLOYER_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+export DEPLOYER_PRIVATE_KEY={{ obj.config.anvilAccounts[0].privateKey }}
 STAKE={{ obj.config.defaultStake }}
 FEE={{ obj.config.defaultFee }}
 
