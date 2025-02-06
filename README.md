@@ -165,7 +165,7 @@ The `express-cli` also comes with additional utility commands, listed below. Som
 - `../../bin/express-cli.js --update-erigon [index]`
 
   - Fetches `erigon` branch defined as `ERIGON_BRANCH` in `.env.devnet<id>` file, pulls relative changes and restarts it on
-    the remote machines. If an integer `index` is used, the job will be performed only on the VM corresponding to that index. For example if the devnet consists of 2 bor and erigon nodes and you wanted to target the first erigon node, `index` will be 2.
+    the remote machines. If an integer `index` is used, the job will be performed only on the VM corresponding to that index. For example, if the devnet consists of 2 bor and erigon nodes and you want to target the first erigon node, `index` will be 2.
 
 - `../../bin/express-cli.js --update-heimdall [index]`
 
@@ -285,14 +285,9 @@ The `express-cli` also comes with additional utility commands, listed below. Som
 
 - `../../bin/express-cli.js --rpc-test`
 
-  - Executes RPC methods against the provided test data and verifies the response data's compatibility and correctness.
-    Since the `tests/rpc-tests/RPC-testdata` is a [submodule](https://github.com/maticnetwork/RPC-testdata) , do the following
-    to initialize and fetch the testdata:
-
-    ```bash
-    git submodule init
-    git submodule update
-    ```
+  - Requires both `RPC_URL` and `MNEMONIC` set
+    - `MNEMONIC` need funds on its first derivation account (m/44'/60'/0'/0/1) to deploy a small contract
+  - Execute a suite of RPC tests against the provided RPC URL, agnostic to the environment. The tests are capable of running on any network, including devnet, testnet (e.g., Amoy/Mumbai), and mainnet, with the only requirement being that the necessary funds are available in the corresponding account on the network
 
 - `../../bin/express-cli.js --relay`
 
