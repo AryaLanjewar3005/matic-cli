@@ -1,45 +1,52 @@
-import { Listr } from 'listr2';
-import chalk from 'chalk';
-import path from 'path';
-import execa from 'execa';
-import fs from 'fs-extra';
+import { Listr } from 'listr2'
+import chalk from 'chalk'
+import path from 'path'
+import execa from 'execa'
+import fs from 'fs-extra'
 
-import { loadConfig } from '../config.js';
-import { processTemplateFiles } from '../../lib/utils.js';
-import { getDefaultBranch } from '../helper.js';
-import { Contracts } from '../contracts/index.js';
-import { getRemoteStdio } from '../../express/common/remote-worker.js';
+import { loadConfig } from '../config.js'
+import {
+  processTemplateFiles,
+  createAccountsFromMnemonics
+} from '../../lib/utils.js'
+import { getDefaultBranch } from '../helper.js'
+import { Contracts } from '../contracts/index.js'
+import { getRemoteStdio } from '../../express/common/remote-worker.js'
 
-export class Anvil{
+export class Anvil {
   constructor(config, options = {}) {
-    this.config = config;
-    console.log("anvil integration started !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+    this.config = config
+    this.mnemonic = config.mnemonic
+    console.log(this.mnemonic)
+    this.deployerAccount = createAccountsFromMnemonics(this.mnemonic, 1)
+    console.log(`Deployer's account : ${this.deployerAccount[0].privateKey}`)
+    this.deployerPrivateKey = this.deployerAccount[0].privateKey
 
-    this.dbName = options.dbName || 'anvil-db';
-    this.serverPort = options.serverPort || 9545;
+    this.dbName = options.dbName || 'anvil-db'
+    this.serverPort = options.serverPort || 9545
 
     // Contracts setup
     this.contracts = new Contracts(config, {
-      repositoryBranch: options.contractsBranch,
-    });
+      repositoryBranch: options.contractsBranch
+    })
   }
 
   get name() {
-    return 'anvil';
+    return 'anvil'
   }
 
   get taskTitle() {
-    return 'Setup contracts on Anvil';
+    return 'Setup contracts on Anvil'
   }
 
   get dbDir() {
-    return path.join(this.config.dataDir, this.dbName);
+    return path.join(this.config.dataDir, this.dbName)
   }
 
   async print() {
     console.log(
       chalk.gray('Anvil db path') + ': ' + chalk.bold.green(this.dbDir)
-    );
+    )
   }
 
   async getStakeTasks() {
@@ -51,50 +58,88 @@ export class Anvil{
             execa('bash', ['anvil-stake.sh'], {
               cwd: this.config.targetDirectory,
               stdio: getRemoteStdio(),
-            }),
-        },
+              env: {
+                ...process.env,
+
+                PATH: `${process.env.HOME}/.foundry/bin:${process.env.PATH}`
+              }
+            })
+        }
       ],
       { exitOnError: true }
-    );
+    )
   }
 
   async getContractDeploymentTasks() {
-    let server = null;
+    let server = null
 
     return new Listr(
       [
         {
           title: 'Reset Anvil',
-          task: () => fs.remove(this.dbDir),
+          task: () => fs.remove(this.dbDir)
         },
         {
           title: 'Start Anvil',
           task: () => {
-            server = execa(`anvil --port 9545 --balance 10000000000 --gas-limit 1000000 --gas-price 1 --accounts 3 --code-size-limit 10000 --verbose --fork-url https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY} --chain-id 11155111`, {
-              stdio: 'inherit',
-            });
-            return server;
-          },
+            server = execa(
+              'anvil',
+              [
+                '--port',
+                `${this.serverPort}`,
+                '--balance',
+                '1000000000000000',
+                '--gas-limit',
+                '1000000000000',
+                '--gas-price',
+                '1',
+                '--accounts',
+                '10',
+                '--mnemonic',
+                `${this.mnemonic}`,
+                '--code-size-limit',
+                '10000000000',
+                '--verbosity',
+                '--state',
+                `${this.dbDir}`
+              ],
+              {
+                stdio: 'inherit',
+                env: {
+                  ...process.env,
+                  PATH: `${process.env.HOME}/.foundry/bin:${process.env.PATH}`
+                }
+              }
+            )
+          }
         },
-        //{
-        //  title: 'Deploy contracts on Main chain',
-        //  task: () =>
-        //    execa('bash', ['anvil-deployment.sh'], {
-        //      cwd: this.config.targetDirectory,
-        //      stdio: getRemoteStdio(),
-        //    }),
-        //},
+        {
+          title: 'Deploy dependencies',
+          task: () =>
+            execa('bash', ['anvil-deploy-dependencies.sh'], {
+              cwd: this.config.targetDirectory,
+              stdio: getRemoteStdio()
+            })
+        },
+        {
+          title: 'Deploy contracts on Main chain',
+          task: () =>
+            execa('bash', ['anvil-deployment.sh'], {
+              cwd: this.config.targetDirectory,
+              stdio: getRemoteStdio()
+            })
+        },
         {
           title: 'Setup validators',
-          task: () => this.getStakeTasks(),
+          task: () => this.getStakeTasks()
         },
         {
           title: 'Stop Anvil',
-          task: () => server?.kill('SIGINT'),
-        },
+          task: () => server?.kill('SIGINT')
+        }
       ],
       { exitOnError: true }
-    );
+    )
   }
 
   async getTasks() {
@@ -108,52 +153,51 @@ export class Anvil{
             const templateDir = path.resolve(
               new URL(import.meta.url).pathname,
               '../templates'
-            );
+            )
 
-            await fs.copy(templateDir, this.config.targetDirectory);
+            await fs.copy(templateDir, this.config.targetDirectory)
             await processTemplateFiles(this.config.targetDirectory, {
-              obj: this,
-            });
-          },
+              obj: this
+            })
+          }
         },
         {
           title: 'Deploy contracts Anvil.....',
-          task: () => this.getContractDeploymentTasks(),
+          task: () => this.getContractDeploymentTasks()
         },
-        ...this.contracts.prepareContractAddressesTasks(),
+        ...this.contracts.prepareContractAddressesTasks()
       ],
       { exitOnError: true }
-    );
+    )
   }
 }
 
 async function setupAnvil(config) {
-  const anvil = new AnvilSetup(config, {
-    contractsBranch: config.contractsBranch,
-  });
+  const anvil = new Anvil(config, {
+    contractsBranch: config.contractsBranch
+  })
 
-  const tasks = await anvil.getTasks();
-  await tasks.run();
+  const tasks = await anvil.getTasks()
+  await tasks.run()
 
-  console.log('%s Anvil snapshot is ready', chalk.green.bold('DONE'));
+  console.log('%s Anvil snapshot is ready', chalk.green.bold('DONE'))
 
-  await config.print();
-  await anvil.print();
+  await config.print()
+  await anvil.print()
 }
 
-export default async function(command) {
+export default async function (command) {
   const config = await loadConfig({
     targetDirectory: command.parent.directory,
     fileName: command.parent.config,
-    interactive: command.parent.interactive,
-  });
+    interactive: command.parent.interactive
+  })
 
-  await config.loadChainIds();
-  await config.loadAccounts();
+  await config.loadChainIds()
+  await config.loadAccounts()
 
-  const answers = await getDefaultBranch(config);
-  config.set(answers);
+  const answers = await getDefaultBranch(config)
+  config.set(answers)
 
-  await setupAnvil(config);
+  await setupAnvil(config)
 }
-

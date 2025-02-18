@@ -11,7 +11,6 @@ import { bufferToHex, privateToPublic, toBuffer } from 'ethereumjs-util'
 
 import { Heimdall } from '../heimdall/index.js'
 import { Bor } from '../bor/index.js'
-import { Ganache } from '../ganache/index.js'
 import { Anvil } from '../anvil/index.js'
 import { Genesis } from '../genesis/index.js'
 import { getDefaultBranch } from '../helper.js'
@@ -263,7 +262,7 @@ export class Devnet {
               )
               .replace(
                 /bor_grpc_flag[ ]*=[ ]*".*"/gi,
-                'bor_grpc_flag = "true"'
+                'bor_grpc_flag = "false"'
               )
               .replace(
                 /bor_grpc_url[ ]*=[ ]*".*"/gi,
@@ -296,7 +295,7 @@ export class Devnet {
             fileReplacer(this.heimdallGenesisFilePath(i))
               .replace(
                 /"matic_token_address":[ ]*".*"/gi,
-                `"matic_token_address": "${rootContracts.tokens.TestToken}"`
+                `"matic_token_address": "${rootContracts.tokens.MaticToken}"`
               )
               .replace(
                 /"staking_manager_address":[ ]*".*"/gi,
@@ -322,7 +321,7 @@ export class Devnet {
         }
       },
       {
-        title: 'Process templates',
+        title: 'Process njk templates',
         task: async () => {
           const templateDir = path.resolve(
             new URL(import.meta.url).pathname,
@@ -336,21 +335,21 @@ export class Devnet {
           )
 
           // TODO: Uncomment when finalized for docker setup
-          // if (this.config.network) {
-          //   const chain = this.config.network
-          //   for (let i = 0; i < this.totalBorNodes; i++) {
-          //     fileReplacer(this.borGenesisFilePath(i))
-          //       .replace(
-          //         /NODE_DIR\/genesis.json/gi,
-          //         `${chain}`
-          //       )
-          //       .save()
-          //   }
-          // }
+          if (this.config.network) {
+            const chain = this.config.network
+            for (let i = 0; i < this.totalBorNodes; i++) {
+              fileReplacer(this.borGenesisFilePath(i))
+                .replace(
+                  /NODE_DIR\/genesis.json/gi,
+                   `${chain}`
+                )
+                .save()
+            }
+          }
           // process template files
           await processTemplateFiles(this.config.targetDirectory, {
             obj: this,
-            ganache: this.ganache
+            anvil: this.anvil
           })
 
           for (let i = 0; i < this.totalBorNodes; i++) {
@@ -685,10 +684,10 @@ export class Devnet {
           if (this.config.devnetBorHosts === undefined || this.config.devnetErigonHosts === undefined) {
             return
           }
-          // copy the Ganache files to the first node
+          // copy the Anvil files to the first node
 
-          const ganacheURL = new URL(this.config.ethURL)
-          const ganacheUser = this.config.ethHostUser
+          const anvilURL = new URL(this.config.ethURL)
+          const anvilUser = this.config.ethHostUser
 
           if (!this.config.network) {
             await execa(
@@ -700,8 +699,8 @@ export class Devnet {
                 'UserKnownHostsFile=/dev/null',
                 '-i',
                 '~/cert.pem',
-                `${this.config.targetDirectory}/ganache-start.sh`,
-                `${ganacheUser}@${ganacheURL.hostname}:~/ganache-start.sh`
+                `${this.config.targetDirectory}/anvil-start.sh`,
+                `${anvilUser}@${anvilURL.hostname}:~/anvil-start.sh`
               ],
               { stdio: getRemoteStdio() }
             )
@@ -717,7 +716,7 @@ export class Devnet {
                 '-i',
                 '~/cert.pem',
                 `${this.config.targetDirectory}/data`,
-                `${ganacheUser}@${ganacheURL.hostname}:~/data`
+                `${anvilUser}@${anvilURL.hostname}:~/data`
               ],
               { stdio: getRemoteStdio() }
             )
@@ -754,7 +753,7 @@ export class Devnet {
                 '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
                 '-i', '~/cert.pem',
                                 `${this.config.devnetBorUsers[i]}@${this.config.devnetBorHosts[i]}`,
-                                'sudo mv ~/ganache.service /lib/systemd/system/'
+                                'sudo mv ~/anvil.service /lib/systemd/system/'
               ], { stdio: getRemoteStdio() })
             }
             await execa('ssh', [
@@ -824,12 +823,12 @@ export class Devnet {
               ], { stdio: getRemoteStdio() })
 
               // NOTE: Target location would vary depending on bor/heimdall version. Currently the setup works with bor and heimdall v0.3.x
-              await execa('ssh', [
-                '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
-                '-i', '~/cert.pem',
-                                `${this.config.devnetErigonUsers[i]}@${this.config.devnetErigonHosts[i]}`,
-                                'sudo mv ~/ganache.service /lib/systemd/system/'
-              ], { stdio: getRemoteStdio() })
+              // await execa('ssh', [
+              //  '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
+              //  '-i', '~/cert.pem',
+              //                  `${this.config.devnetErigonUsers[i]}@${this.config.devnetErigonHosts[i]}`,
+              //                  'sudo mv ~/anvil.service /lib/systemd/system/'
+              // ], { stdio: getRemoteStdio() })
             }
             await execa('ssh', [
               '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
@@ -941,9 +940,15 @@ export class Devnet {
                   '-i',
                   '~/cert.pem',
                   `${this.config.devnetBorUsers[i]}@${this.config.devnetBorHosts[i]}`,
-                  'sudo systemctl start ganache.service'
+                  'sudo systemctl start anvil.service'
                 ],
-                { stdio: getRemoteStdio() }
+                {
+                  stdio: getRemoteStdio(),
+                  env: {
+                    ...process.env,
+                    PATH: `${process.env.HOME}/.foundry/bin:${process.env.PATH}`
+                  }
+                }
               )
             }
 
@@ -1149,7 +1154,7 @@ export class Devnet {
                   '-i',
                   '~/cert.pem',
                   `${this.config.devnetErigonUsers[i]}@${this.config.devnetErigonHosts[i]}`,
-                  'sudo systemctl start ganache.service'
+                  'sudo systemctl start anvil.service'
                 ],
                 { stdio: getRemoteStdio() }
               )
@@ -1390,17 +1395,30 @@ export class Devnet {
         this.config.genesisAddresses = genesisAddresses
 
         // setup accounts from signer dump data (based on number of validators)
+        // this.config.accounts = this.signerDumpData
+        //  .slice(0, this.config.numOfBorValidators)
+        //  .map((s) => {
+        //    //return getAccountFromPrivateKey(s.priv_key)
+        //      const account = getAccountFromPrivateKey(s.priv_key);
+        //      return { ...account, pub_key: s.pub_key };
+        //  })
         this.config.accounts = this.signerDumpData
           .slice(0, this.config.numOfBorValidators)
           .map((s) => {
-            return getAccountFromPrivateKey(s.priv_key)
+            const account = getAccountFromPrivateKey(s.priv_key)
+            const sanitizedPubKey = s.pub_key.startsWith('0x04')
+              ? '0x' + s.pub_key.slice(4)
+              : s.pub_key // Remove "04" prefix if present
+            return { ...account, pub_key: sanitizedPubKey }
           })
 
         if (this.config.numOfErigonValidators > 0) {
           const erigonAccounts = this.signerDumpData
             .slice(this.config.numOfBorValidators, this.config.numOfBorValidators + this.config.numOfErigonValidators)
             .map((s) => {
-              return getAccountFromPrivateKey(s.priv_key)
+              // return getAccountFromPrivateKey(s.priv_key)
+              const account = getAccountFromPrivateKey(s.priv_key)
+              return { ...account, pub_key: s.pub_key }
             })
 
           erigonAccounts.forEach((acc) => {
@@ -1435,7 +1453,6 @@ export class Devnet {
   }
 
   async getTasks() {
-    const ganache = this.ganache
     const anvil = this.anvil
     const heimdall = this.heimdall
     const bor = this.bor
@@ -1575,9 +1592,9 @@ export class Devnet {
         }
       },
       {
-        title: ganache.taskTitle,
+        title: anvil.taskTitle,
         task: () => {
-          return ganache.getTasks()
+          return anvil.getTasks()
         },
         enabled: () => {
           return (this.config.devnetType === 'docker' || 'remote') && !this.config.network
@@ -1640,7 +1657,7 @@ export class Devnet {
 
 async function setupDevnet(config) {
   const devnet = new Devnet(config)
-  devnet.ganache = new Ganache(config, {
+  devnet.anvil = new Anvil(config, {
     contractsBranch: config.contractsBranch
   })
   devnet.anvil = new Anvil(config, {
@@ -1802,7 +1819,7 @@ export default async function (command) {
       type: 'input',
       name: 'ethURL',
       message: 'Please enter ETH url',
-      default: 'http://ganache:9545'
+      default: 'http://anvil:9545'
     })
   }
 
