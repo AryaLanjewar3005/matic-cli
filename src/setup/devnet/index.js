@@ -1601,6 +1601,15 @@ export class Devnet {
         }
       },
       {
+        title: anvil.taskTitle,
+        task: () => {
+          return anvil.getTasks()
+        },
+        enabled: () => {
+          return (this.config.devnetType === 'docker' || 'remote') && !this.config.network
+        }
+      },
+      {
         title: 'Remove multiple keystore files',
         task: async () => {
           let erigonValCount = this.config.numOfErigonValidators
@@ -1650,6 +1659,9 @@ async function setupDevnet(config) {
   const devnet = new Devnet(config)
   devnet.anvil = new Anvil(config, {
     contractsBranch: config.contractsBranch
+  })
+  devnet.anvil = new Anvil(config, {
+    contractsBranch : config.contractsBranch
   })
   devnet.bor = new Bor(config, {
     repositoryUrl: config.borRepo,
